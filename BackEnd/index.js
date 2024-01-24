@@ -89,29 +89,29 @@ app.get("/people", async (req, res) => {
   res.json(users)
 })
 const getUserDataFromRequest = (req) => {
-  return new Promise((resolve, rejects) => {
-    const token = req.cookie?.token
+  return new Promise((resolve, reject) => {
+    const token = req.cookies?.token;
     if (token) {
       jwt.verify(token, secret, {}, (err, userData) => {
         if (err) throw err;
-        resolve(userData)
-      })
+        resolve(userData);
+      });
     } else {
-      rejects("no Token")
+      reject("no token");
     }
-  })
-}
-app.get("/message/:userId", async (req, res) => {
-  const { userId } = req.params;
-  const userData = await getUserDataFromRequest(req)
-  const ourUserId = userData.userId;
-  const messages = await Message.find({
-    sender: { $in: { userId, ourUserId } },
-    recipient: { $in: { userId, ourUserId } }
-  }).sort({ createAt: 1 })
-  res.json(messages)
-})
+  });
+};
 
+app.get("/messages/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const userData = await getUserDataFromRequest(req);
+  const ourUserId = userData.userId;
+  const message = await Message.find({
+    sender: { $in: [userId, ourUserId] },
+    recipient: { $in: [userId, ourUserId] },
+  }).sort({ createAt: 1 });
+  res.json(message);
+});
 
 const PORT = process.env.PORT;
 const server = app.listen(PORT, () => {
@@ -132,6 +132,8 @@ wss.on('connection', (connection, req) => {
       }))
     })
   }
+
+  
   connection.isAlive = true
   connection.timer = setInterval(() => {
     connection.ping()
@@ -176,10 +178,10 @@ wss.on('connection', (connection, req) => {
       filename = Date.now() + "." + ext;
       //
       const path = __dirname + "/uploads/" + filename
-      const bufferData = new Buffer(file.data.split(",")[1], 'base64')
-      fs.writeFile(path, bufferData), () => {
+      // const bufferData = new Buffer(file.data.split(",")[1], 'base64')
+      fs.writeFile(path, file.data.split(",")[1], 'base64', () => {
         console.log("file saved:" + path);
-      }
+      })
     }
     if (recipient && (text || file)) {
       const messageDoc = await Message.create({
@@ -188,7 +190,7 @@ wss.on('connection', (connection, req) => {
         text,
         file: file ? filename : null,
 
-      },
+      }
       );
       [...wss.clients]
         .filter(c => c.userId === recipient)
