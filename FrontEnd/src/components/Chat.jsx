@@ -65,6 +65,14 @@ const showOnlinePeople = (peopleArray) => {
     const onlinePeopleExclOurUser = {...onlinePeople};
     delete onlinePeopleExclOurUser[id]
 
+  const Logout = () => {
+    axios.post("/logout".then(()=> {
+      setWs(null)
+      setId(null)
+      setUsername(null)
+    }))
+  }
+
   return (
 
     <div className="flex h-screen">
@@ -103,7 +111,7 @@ const showOnlinePeople = (peopleArray) => {
 
            { username}
           </span>
-          <button className="text-sm blue-100 py-1 px-2 text-gray-500 border rounded-sm">
+          <button className="text-sm blue-100 py-1 px-2 text-gray-500 border rounded-sm" onClick={Logout}>
             Logout
           </button>
         </div>
