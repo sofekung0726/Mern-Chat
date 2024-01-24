@@ -12,6 +12,7 @@ const Chat = () => {
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [message , setMessage] = useState([])
   const {username , id , setUsername , setId} = useContext(UserContext)
+  const [newMessageText , setNewMessageText] = useState()
 
   //this useEffect for connectWebSocket
   useEffect(() => {
@@ -72,6 +73,28 @@ const showOnlinePeople = (peopleArray) => {
       setUsername(null)
     })
   }
+  const sendMessage = (e, file=null)=> {
+    if(e) e.preventDefault();
+    ws.send(JSON.stringify({
+      recipient:selectedUserId,
+      text:newMessageText,
+      file,
+    })
+    );
+    if (file) {
+      axios.get("/message/" + selectedUserId).then(res => {
+        setMessage(res.data)
+      })
+    }else {
+      setNewMessageText("")
+      setMessage(prev => [...prev , {
+        text:newMessageText,
+        send:id,
+        recipient:selectedUserId,
+        _id : Date.now()
+      }])
+    }
+  }
 
   return (
 
@@ -124,9 +147,12 @@ const showOnlinePeople = (peopleArray) => {
             </div>
           </div>
         </div>
-        <form className="flex gap-2">
+        <form className="flex gap-2" onSubmit={sendMessage}>
           <input type="text" placeholder='Enter Chat'
+          value={newMessageText}
+          onChange={(e) => setNewMessageText(e.target.value)}
             className="bg-white flex-grow border rounded-sm p-2"
+
           />
           <label htmlFor="" className="bg-blue-200 p-2
            text-gray-600 cursor-pointer rounded-sm border-blue-200">

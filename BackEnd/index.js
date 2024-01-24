@@ -10,6 +10,8 @@ const Message = require("./models/Message")
 const ws = require("ws")
 const fs = require("fs")
 const { connect } = require("http2")
+const { resolve } = require("path")
+const { rejects } = require("assert")
 //
 require("dotenv").config();
 
@@ -82,10 +84,34 @@ app.get("/profile", (req, res) => {
   }
 })
 
-app.get("/people" , async (req,res) => {
-  const users = await User.find({} , {'id' :1, username: 1})
+app.get("/people", async (req, res) => {
+  const users = await User.find({}, { 'id': 1, username: 1 })
   res.json(users)
 })
+const getUserDataFromRequest = (req) => {
+  return new Promise((resolve, rejects) => {
+    const token = req.cookie?.token
+    if (token) {
+      jwt.verify(token, secret, {}, (err, userData) => {
+        if (err) throw err;
+        resolve(userData)
+      })
+    } else {
+      rejects("no Token")
+    }
+  })
+}
+app.get("/message/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const userData = await getUserDataFromRequest(req)
+  const ourUserId = userData.userId;
+  const messages = await Message.find({
+    sender: { $in: { userId, ourUserId } },
+    recipient: { $in: { userId, ourUserId } }
+  }).sort({ createAt: 1 })
+  res.json(messages)
+})
+
 
 const PORT = process.env.PORT;
 const server = app.listen(PORT, () => {
@@ -163,16 +189,24 @@ wss.on('connection', (connection, req) => {
         file: file ? filename : null,
 
       },
-      [...wss.clients].filter(c => c.userId === recipient).forEach(c => c.send(JSON.stringify({
-        text,
-        file: file ? filename : null,
-        sender: connection.userId,
-        recipient,
-        _id: messageDoc._id
-      }))))
-      
-}
+      );
+      [...wss.clients]
+        .filter(c => c.userId === recipient)
+        .forEach(c =>
+          c.send(
+            JSON.stringify({
+              text,
+              file: file ? filename : null,
+              sender: connection.userId,
+              recipient,
+              _id: messageDoc._id
+            }
+            )
+          )  
+        )
 
-})
-notifyAboutOnlinePeople();
+    }
+
+  })
+  notifyAboutOnlinePeople();
 })
