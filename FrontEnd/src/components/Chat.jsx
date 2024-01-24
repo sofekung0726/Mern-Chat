@@ -11,7 +11,7 @@ const Chat = () => {
   const [offlinePeople, setOfflinePeople] = useState({})
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [message , setMessage] = useState([])
-  const {username , id , setUsername} = useContext(UserContext)
+  const {username , id , setUsername , setId} = useContext(UserContext)
 
   //this useEffect for connectWebSocket
   useEffect(() => {
@@ -66,11 +66,11 @@ const showOnlinePeople = (peopleArray) => {
     delete onlinePeopleExclOurUser[id]
 
   const Logout = () => {
-    axios.post("/logout".then(()=> {
+    axios.post("/logout").then(()=> {
       setWs(null)
       setId(null)
       setUsername(null)
-    }))
+    })
   }
 
   return (
